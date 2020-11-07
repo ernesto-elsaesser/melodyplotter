@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>MelodyPlotter</title>
+</head>
+<body>
+    <p id="notes">TAP TO START</p>
+    <script>
+
+var notes = document.getElementById('notes');
+var context;
+var analyzer;
+var buffer = new Uint8Array(1024);
+
+
+function setup(stream) {
+    context = new (window.AudioContext || window.webkitAudioContext)();
+
+    analyser = context.createAnalyser();
+    //analyser.fftSize = 256;
+    analyser.minDecibels = -90;
+    analyser.maxDecibels = -10;
+    //analyser.smoothingTimeConstant = 0.85;
+
+    var source = context.createMediaStreamSource(stream);
+    analyser.connect(context.destination);
+    var bufferLengthAlt = analyser.frequencyBinCount;
+    console.log(bufferLengthAlt);
+    buffer = new Uint8Array(bufferLengthAlt);
+
+    window.setInterval(transcribe, 1000);
+
+}
+
+function transcribe() {
+    analyser.getByteFrequencyData(buffer);
+    maxFreq = 0;
+    maxLevel = 0;
+    for(var freq = 0; freq < 1024; freq++) {
+        level = buffer[freq];
+        if (level > maxLevel) {
+            maxLevel = level;
+            maxFreq = freq;
+        }
+    }
+    notes.innerHTML = 'Frequency: ' + str(maxFreq) + '<br/>Level: ' + str(level);
+}  
+
+function init() {
+    document.body.removeEventListener('click', init)
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({audio: true}).then(setup)
+            .catch( err => window.alert('Failed to access audio devices: ' + err) );
+    } else {
+        window.alert('Audio devices unavailable!');
+    }
+}
+
+document.body.addEventListener('click', init);
+
+    </script>
+	
+</body>
+</html>
