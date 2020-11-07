@@ -24,6 +24,7 @@ function setup(stream) {
     analyser.minDecibels = -90;
     analyser.maxDecibels = -10;
 
+    source = context.createMediaStreamSource(stream);
     source.connect(analyser);
     analyser.connect(context.destination);
 
