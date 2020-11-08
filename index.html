@@ -12,7 +12,9 @@
 var notes = document.getElementById('notes');
 var context;
 var analyzer;
-var buffer = new Uint8Array(2048);
+var binCount = 2048;
+var binSize;
+var buffer = new Uint8Array(binCount);
 
 var pitches = [
     '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
@@ -26,10 +28,10 @@ var pitches = [
 
 function setup(stream) {
     context = new (window.AudioContext || window.webkitAudioContext)();
+    binSize = (context.sampleRate / 2) / binCount;
 
     analyser = context.createAnalyser();
-    analyser.fftSize = 4096;
-    //analyser.smoothingTimeConstant = 0.8;
+    analyser.fftSize = binCount * 2;
     analyser.minDecibels = -90;
     analyser.maxDecibels = -10;
 
@@ -41,17 +43,16 @@ function setup(stream) {
 
 function transcribe() {
     analyser.getByteFrequencyData(buffer);
-    maxFreq = 0;
-    maxLevel = 0;
-    for(var freq = 0; freq < 1024; freq++) {
-        level = buffer[freq];
+    var maxBin = 0;
+    var maxLevel = 0;
+    for(var bin = 0; bin < binCount; bin++) {
+        var level = buffer[bin];
         if (level > maxLevel) {
             maxLevel = level;
-            maxFreq = freq;
+            maxBin = bin;
         }
     }
-    //var pitch = pitches[maxFreq];
-    notes.innerHTML = 'Pitch: ' + maxFreq;
+    notes.innerHTML = 'Loudest frequency: ' + (maxBin * binSize)  + ' Hz';
 }  
 
 function init() {
