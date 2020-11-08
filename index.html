@@ -6,7 +6,7 @@
 	<title>MelodyPlotter</title>
 </head>
 <body>
-    <p id="notes">TAP TO START</p>
+    <p id="notes">TAP TO START TRANSCRIPTION</p>
     <script>
 
 var notes = document.getElementById('notes');
@@ -15,16 +15,6 @@ var analyzer;
 var binCount = 2048;
 var binSize;
 var buffer = new Uint8Array(binCount);
-
-var pitches = [
-    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
-    '?', '?', 'C4', '?', 'D4', 'E4', 'F4', 'F#4', 'G4', '?', 
-    'A4', '?', '?', 'B4', '?', '?', '?', '?', '?', '?', 
-    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
-    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
-    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
-    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?'
-]
 
 function setup(stream) {
     context = new (window.AudioContext || window.webkitAudioContext)();
