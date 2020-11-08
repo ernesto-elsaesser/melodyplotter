@@ -42,7 +42,8 @@ function transcribe() {
             maxBin = bin;
         }
     }
-    notes.innerHTML = 'Loudest frequency: ' + (maxBin * binSize)  + ' Hz';
+    var frequency = parseInt(maxBin * binSize);
+    notes.innerHTML = 'Loudest frequency: ' + frequency  + ' Hz';
 }  
 
 function init() {
