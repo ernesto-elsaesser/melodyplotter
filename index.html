@@ -12,14 +12,23 @@
 var notes = document.getElementById('notes');
 var context;
 var analyzer;
-var buffer = new Uint8Array(1024);
+var buffer = new Uint8Array(2048);
 
+var pitches = [
+    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
+    '?', '?', 'C4', '?', 'D4', 'E4', 'F4', 'F#4', 'G4', '?', 
+    'A4', '?', '?', 'B4', '?', '?', '?', '?', '?', '?', 
+    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
+    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
+    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
+    '?', '?', '?', '?', '?', '?', '?', '?', '?', '?'
+]
 
 function setup(stream) {
     context = new (window.AudioContext || window.webkitAudioContext)();
 
     analyser = context.createAnalyser();
-    //analyser.fftSize = 2048;
+    analyser.fftSize = 4096;
     //analyser.smoothingTimeConstant = 0.8;
     analyser.minDecibels = -90;
     analyser.maxDecibels = -10;
@@ -41,8 +50,8 @@ function transcribe() {
             maxFreq = freq;
         }
     }
-    relLevel = maxLevel / 255;
-    notes.innerHTML = 'Frequency: ' + maxFreq + '<br/>Level: ' + relLevel + '%';
+    //var pitch = pitches[maxFreq];
+    notes.innerHTML = 'Pitch: ' + maxFreq;
 }  
 
 function init() {
