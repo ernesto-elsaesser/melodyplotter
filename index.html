@@ -26,9 +26,8 @@ function setup(stream) {
 
     source = context.createMediaStreamSource(stream);
     source.connect(analyser);
-    analyser.connect(context.destination);
 
-    window.setInterval(transcribe, 1000);
+    window.setInterval(transcribe, 10);
 }
 
 function transcribe() {
@@ -42,7 +41,8 @@ function transcribe() {
             maxFreq = freq;
         }
     }
-    notes.innerHTML = 'Frequency: ' + maxFreq + '<br/>Level: ' + maxLevel;
+    relLevel = maxLevel / 255;
+    notes.innerHTML = 'Frequency: ' + maxFreq + '<br/>Level: ' + relLevel + '%';
 }  
 
 function init() {
