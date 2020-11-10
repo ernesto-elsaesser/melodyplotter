@@ -6,18 +6,24 @@
 	<title>MelodyPlotter</title>
 </head>
 <body>
-    <p id="notes">TAP TO START TRANSCRIPTION</p>
+    <button type="button" onclick="startStop()">START/STOP</button>
+    <p id="notes"></p>
     <script>
 
-var notes = document.getElementById('notes');
-var context;
-var analyzer;
 var binCount = 4096;
 var binSize;
+
+var notes = document.getElementById('notes');
+var initialized = false;
+var intervalHandle;
+var analyser;
+
 var buffer = new Uint8Array(binCount);
+var prevBins = [];
+
 
 function setup(stream) {
-    context = new (window.AudioContext || window.webkitAudioContext)();
+    var context = new (window.AudioContext || window.webkitAudioContext)();
     binSize = (context.sampleRate / 2) / binCount;
 
     analyser = context.createAnalyser();
@@ -25,39 +31,51 @@ function setup(stream) {
     analyser.minDecibels = -90;
     analyser.maxDecibels = -10;
 
-    source = context.createMediaStreamSource(stream);
+    var source = context.createMediaStreamSource(stream);
     source.connect(analyser);
-
-    window.setInterval(transcribe, 10);
 }
 
 function transcribe() {
     analyser.getByteFrequencyData(buffer);
     var maxBin = 0;
     var maxLevel = 0;
+    var levelSum = 0;
     for(var bin = 0; bin < binCount; bin++) {
         var level = buffer[bin];
+        levelSum += level;
         if (level > maxLevel) {
             maxLevel = level;
             maxBin = bin;
         }
     }
+    var mean = levelSum / binCount;
+    if (maxLevel < mean * 1.5) {
+        return;
+    }
+    prevBins.push(maxBin);
     var frequency = parseInt(maxBin * binSize);
-    notes.innerHTML = 'Loudest frequency: ~' + frequency  + ' Hz';
+    notes.innerHTML = 'Frequency: ~' + frequency  + ' Hz, bin: ' + maxBin + ', level: ' + maxLevel + ', mean: ' + mean;
 }  
 
-function init() {
-    document.body.removeEventListener('click', init)
+async function startStop() {
 
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({audio: true}).then(setup)
-            .catch( err => window.alert('Failed to access audio devices: ' + err) );
+    if (intervalHandle) {
+        window.clearInterval(intervalHandle)
+        intervalHandle = undefined;
     } else {
-        window.alert('Audio devices unavailable!');
+        if (!initialized) {
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({audio: true});
+                setup(stream)
+                initialized = true;
+            } catch(err) {
+                window.alert('Cannot access microphone: ' + err);
+                return;
+            }
+        }
+        intervalHandle = window.setInterval(transcribe, 10);
     }
 }
-
-document.body.addEventListener('click', init);
 
     </script>
 	
