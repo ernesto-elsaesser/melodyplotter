@@ -6,76 +6,61 @@
 	<title>MelodyPlotter</title>
 </head>
 <body>
-    <button type="button" onclick="startStop()">START/STOP</button>
-    <p id="notes"></p>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <button type="btnInit" onclick="init()">START</button>
+    <button type="btnNote" onclick="note()">NOTE</button>
+    <figure class="highcharts-figure">
+        <div id="container"></div>
+    </figure>
     <script>
 
-var binCount = 4096;
-var binSize;
+var output = document.getElementById('output');
 
-var notes = document.getElementById('notes');
-var initialized = false;
-var intervalHandle;
+var fftSize = 16384; // ~0.37 seconds with ~2.7 Hz bins for 44100 sample rate
+var bufferSize = 500; // until ~1346 Hz
+
+var context;
 var analyser;
+var binWidth;
+var buffer;
 
-var buffer = new Uint8Array(binCount);
-var prevBins = [];
 
+async function init() {
+    try {
+        var stream = await navigator.mediaDevices.getUserMedia({audio: true});
 
-function setup(stream) {
-    var context = new (window.AudioContext || window.webkitAudioContext)();
-    binSize = (context.sampleRate / 2) / binCount;
+        context = new (window.AudioContext || window.webkitAudioContext)();
+        binWidth = context.sampleRate / fftSize;
 
-    analyser = context.createAnalyser();
-    analyser.fftSize = binCount * 2;
-    analyser.minDecibels = -90;
-    analyser.maxDecibels = -10;
+        analyser = context.createAnalyser();
+        analyser.smoothingTimeConstant = 0;
+        analyser.fftSize = fftSize;
 
-    var source = context.createMediaStreamSource(stream);
-    source.connect(analyser);
+        var source = context.createMediaStreamSource(stream);
+        source.connect(analyser);
+        buffer = new Float32Array(bufferSize);
+    } catch(err) {
+        window.alert('Cannot access microphone: ' + err);
+    }
 }
 
-function transcribe() {
-    analyser.getByteFrequencyData(buffer);
-    var maxBin = 0;
-    var maxLevel = 0;
-    var levelSum = 0;
-    for(var bin = 0; bin < binCount; bin++) {
-        var level = buffer[bin];
-        levelSum += level;
-        if (level > maxLevel) {
-            maxLevel = level;
-            maxBin = bin;
-        }
-    }
-    var mean = levelSum / binCount;
-    if (maxLevel < mean * 1.5) {
+function note() {
+    if (analyser == null) {
         return;
     }
-    prevBins.push(maxBin);
-    var frequency = parseInt(maxBin * binSize);
-    notes.innerHTML = 'Frequency: ~' + frequency  + ' Hz, bin: ' + maxBin + ', level: ' + maxLevel + ', mean: ' + mean;
-}  
 
-async function startStop() {
-
-    if (intervalHandle) {
-        window.clearInterval(intervalHandle)
-        intervalHandle = undefined;
-    } else {
-        if (!initialized) {
-            try {
-                var stream = await navigator.mediaDevices.getUserMedia({audio: true});
-                setup(stream)
-                initialized = true;
-            } catch(err) {
-                window.alert('Cannot access microphone: ' + err);
-                return;
-            }
-        }
-        intervalHandle = window.setInterval(transcribe, 10);
+    analyser.getFloatFrequencyData(buffer);
+    var points = [];
+    for (var bin = 0; bin < bufferSize; bin++) {
+        points.push([bin * binWidth, buffer[bin]])
     }
-}
+
+    Highcharts.chart('container', {
+        title: { text: '' },
+        yAxis: { title: { text: 'dB' } },
+        series: [ { name: 'Level', data: points } ]
+    });
+}  
 
     </script>
 	
