@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Vowel Formants</title>
+  </head>
+  <body>
+    <div>
+      <span class="label">Vowel</span>
+      <input type="range" id="vowel-slider" class="slider" min="0" max="11" step="0.0275" value="0" />
+      <span id="vowel-ipa-display" class="label"></span><span id="vowel-ex-display" class="label"></span>
+      <br/>
+      <span class="label">Frequency</span>
+      <input type="range" id="freq-slider" class="slider" min="40" max="800" step="1" value="80" />
+      <span id="freq-display" class="label"></span>
+      <br/>
+    </div>
+    <div>
+      <input type="button" id="start" value="start" />
+      <input type="button" id="stop" value="stop" />
+    </div>
+  </body>
+
+  <script type="text/javascript">
+
+    (function () {
+
+      // Sources
+      //    Formant frequencies: Hillenbrand, Getty, Clark and Wheeler (1994), "Acoustic charcteristics of
+      //        American English Vowels", Journal of the Acoustic Society of America; Table V
+      //    Formant amplitudes: Peterson and Barney (1952), "Control Methods User in a Study of the Vowels",
+      //        Journal of the Acoustic Society of America; Table II; dB converted to gain with
+      //        Math.pow(10, dB / 20)
+
+      var vowel = [
+        {
+          ipa: 'i',
+          f: [138, 342, 2322, 3000, 3657],
+          q: [8, 10, 35, 40, 40],
+          a: [0.63, 0.63, 0.06, 0.04, 0.04]
+        },
+        {
+          ipa: 'ɪ',
+          f: [135, 427, 2034, 2684, 3618],
+          q: [8, 10, 35, 40, 40],
+          a: [0.71, 0.71, 0.07, 0.04, 0.04]
+        },
+        {
+          ipa: 'e',
+          f: [129, 476, 2089, 2691, 3649],
+          q: [8, 10, 35, 40, 40],
+          a: [0.79, 0.79, 0.10, 0.06, 0.06]
+        },
+        {
+          ipa: 'ɛ',
+          f: [127, 580, 1799, 2605, 3677],
+          q: [8, 10, 35, 40, 40],
+          a: [0.79, 0.79, 0.14, 0.06, 0.06]
+        },
+        {
+          ipa: 'æ',
+          f: [123, 588, 1952, 2601, 3624],
+          q: [8, 10, 35, 40, 40],
+          a: [0.89, 0.89, 0.25, 0.08, 0.08]
+        },
+        {
+          ipa: 'ɑ',
+          f: [123, 768, 1333, 2522, 3687],
+          q: [8, 10, 35, 40, 40],
+          a: [0.89, 0.89, 0.56, 0.04, 0.04]
+        },
+        {
+          ipa: 'ɔ',
+          f: [121, 652, 997, 2538, 3486],
+          q: [8, 10, 35, 40, 40],
+          a: [1, 1, 0.45, 0.02, 0.02]
+        },
+        {
+          ipa: 'o',
+          f: [129, 497, 910, 2459, 3384],
+          q: [8, 10, 35, 40, 40],
+          a: [0.89, 0.89, 0.32, 0.02, 0.02]
+        },
+        {
+          ipa: 'u',
+          f: [143, 378, 997, 2343, 3357],
+          q: [8, 10, 35, 40, 40],
+          a: [0.71, 0.71, 0.11, 0.01, 0.01]
+        },
+        {
+          ipa: 'ʊ',
+          f: [133, 469, 1122, 2434, 3400],
+          q: [8, 10, 35, 40, 40],
+          a: [0.89, 0.89, 0.25, 0.02, 0.02]
+        },
+        {
+          ipa: 'ʌ',
+          f: [133, 623, 1200, 2550, 3557],
+          q: [8, 10, 35, 40, 40],
+          a: [0.89, 0.89, 0.32, 0.04, 0.04]
+        },
+        {
+          ipa: 'ɚ',
+          f: [130, 474, 1379, 1710, 3334],
+          q: [8, 10, 35, 40, 40],
+          a: [0.56, 0.56, 0.18, 0.10, 0.10]
+        }
+      ];
+
+      var context = new (window.AudioContext || window.webkitAudioContext)();
+
+      var oscNode, masterGainNode, masterFilterNode, modOscNode, modGainNode, filterNodes = [], gainNodes = [];
+      var formant, frequency;
+
+      var vowelIpaDisplay = document.getElementById('vowel-ipa-display');
+      var vowelSlider = document.getElementById('vowel-slider');
+      vowelSlider.addEventListener('input', updateVowel);
+
+      var freqDisplay = document.getElementById('freq-display');
+      var freqSlider = document.getElementById('freq-slider');
+      freqSlider.addEventListener('input', updateFrequency);
+
+      document.getElementById('start').addEventListener('click', start);
+      document.getElementById('stop').addEventListener('click', stop);
+
+      function getIntermediate(prop, idx) {
+        var i = Math.floor(vowelSlider.value);
+        if (i == 11) {
+          return vowel[i][prop][idx];
+        }
+        var d = vowelSlider.value - i;
+        var dx = (vowel[i + 1][prop][idx] - vowel[i][prop][idx]) * d;
+        return vowel[i][prop][idx] + dx;
+      }
+
+      function start() {
+        if (!oscNode) {
+          oscNode = context.createOscillator();
+          oscNode.frequency.value = frequency;
+          oscNode.type = 'sawtooth';
+
+          modOscNode = context.createOscillator();
+          modOscNode.frequency.value = 5;
+
+          modGainNode = context.createGain();
+          modGainNode.gain.value = frequency * 0.02;
+
+          modOscNode.connect(modGainNode);
+          modGainNode.connect(oscNode.frequency);
+
+          masterFilterNode = context.createBiquadFilter();
+          masterFilterNode.frequency.value = 5000;
+          masterFilterNode.type = 'lowpass';
+          oscNode.connect(masterFilterNode);
+
+          masterGainNode = context.createGain();
+          masterGainNode.gain.value = 0;
+
+          for (var i = 0; i <= 4; i++) {
+            filterNodes[i] = context.createBiquadFilter();
+            filterNodes[i].type = 'bandpass';
+            masterFilterNode.connect(filterNodes[i]);
+
+            gainNodes[i] = context.createGain();
+            filterNodes[i].connect(gainNodes[i]);
+
+            gainNodes[i].connect(masterGainNode);
+          }
+
+          updateVowel();
+
+          masterGainNode.connect(context.destination);
+          oscNode.start();
+          modOscNode.start();
+
+          masterGainNode.gain.setValueAtTime(0, context.currentTime);
+          masterGainNode.gain.linearRampToValueAtTime(0.5, context.currentTime + 0.02);
+        }
+      }
+
+      function stop() {
+        if (oscNode) {
+          masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, context.currentTime);
+          masterGainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.02);
+
+          setTimeout(function () {
+            oscNode.stop();
+            masterGainNode.disconnect(context.destination);
+            oscNode = undefined;
+            modOscNode = undefined;
+            modGainNode = undefined;
+            masterFilterNode = undefined;
+            filterNodes = [];
+            gainNodes = [];
+            masterGainNode = undefined;
+          }, 40);
+        }
+      }
+
+      function updateFrequency() {
+        frequency = freqSlider.value;
+        freqDisplay.textContent = frequency + ' hz';
+
+        if (oscNode) {
+          oscNode.frequency.value = frequency;
+        }
+      }
+
+      function updateVowel() {
+        var v = vowel[Math.round(vowelSlider.value)];
+        vowelIpaDisplay.textContent = 'IPA: ' + v.ipa;
+
+        if (filterNodes.length) {
+          for (var i = 0; i <= 4; i++) {
+            filterNodes[i].frequency.value = getIntermediate('f', i);
+            filterNodes[i].Q.value = getIntermediate('q', i);
+            gainNodes[i].gain.value = getIntermediate('a', i);
+          }
+        }
+      }
+
+      updateVowel();
+      updateFrequency();
+    })();
+
+  </script>
+</html>
