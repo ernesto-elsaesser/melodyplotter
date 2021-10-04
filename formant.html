@@ -13,17 +13,20 @@
       <br/>
       <span class="label">Formant Frequency 1</span>
       <input type="range" id="amp-slider-1" class="slider" min="1" max="100" step="1" value="89" />
-      <input type="range" id="freq-slider-1" class="slider" min="100" max="3000" step="10" value="123" />
+      <input type="range" id="q-slider-1" class="slider" min="8" max="40" step="1" value="10" />
+      <input type="range" id="freq-slider-1" class="slider" min="400" max="800" step="10" value="700" />
       <span id="display-1" class="label"></span>
       <br/>
       <span class="label">Formant Frequency 2</span>
-      <input type="range" id="amp-slider-2" class="slider" min="1" max="100" step="1" value="89" />
-      <input type="range" id="freq-slider-2" class="slider" min="100" max="3000" step="10" value="768" />
+      <input type="range" id="amp-slider-2" class="slider" min="1" max="100" step="1" value="56" />
+      <input type="range" id="q-slider-2" class="slider" min="8" max="40" step="1" value="35" />
+      <input type="range" id="freq-slider-2" class="slider" min="800" max="1600" step="10" value="1220" />
       <span id="display-2" class="label"></span>
       <br/>
       <span class="label">Formant Frequency 3</span>
-      <input type="range" id="amp-slider-3" class="slider" min="1" max="100" step="1" value="56" />
-      <input type="range" id="freq-slider-3" class="slider" min="100" max="3000" step="10" value="1333" />
+      <input type="range" id="amp-slider-3" class="slider" min="1" max="100" step="1" value="4" />
+      <input type="range" id="q-slider-3" class="slider" min="8" max="40" step="1" value="40" />
+      <input type="range" id="freq-slider-3" class="slider" min="1600" max="3200" step="10" value="2600" />
       <span id="display-3" class="label"></span>
     </div>
     <div>
@@ -42,8 +45,9 @@
       var masterGainNode, masterFilterNode;
       var frequency;
 
-      var freqSliders = [];
+      var qSliders = [];
       var ampSliders = [];
+      var freqSliders = [];
       var displays = [];
 
       for (var i = 0; i <= 3; i++) {
@@ -54,6 +58,9 @@
           var display = document.getElementById('display-' + num);
           displays.push(display);
           if (i == 0) { continue; }
+          var qSlider = document.getElementById('q-slider-' + num);
+          qSlider.addEventListener('input', updateFormant);
+          qSliders.push(qSlider);
           var ampSlider = document.getElementById('amp-slider-' + num);
           ampSlider.addEventListener('input', updateFormant);
           ampSliders.push(ampSlider);
@@ -89,7 +96,6 @@
           for (var i = 0; i < 3; i++) {
             filterNodes[i] = context.createBiquadFilter();
             filterNodes[i].type = 'bandpass';
-            filterNodes[i].Q.value = qs[i];
             masterFilterNode.connect(filterNodes[i]);
 
             gainNodes[i] = context.createGain();
@@ -141,6 +147,7 @@
           displays[i+1].textContent = filterFreq + ' hz';
           if (filterNodes.length) {
             gainNodes[i].gain.value = ampSliders[i].value / 100;
+            filterNodes[i].Q.value = qSliders[i].value;
             filterNodes[i].frequency.value = filterFreq;
           }
         }
