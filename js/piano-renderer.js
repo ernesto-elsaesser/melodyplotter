@@ -178,21 +178,18 @@ const PianoRenderer = (function () {
         if (columns.length === 0) return; // still no width available, skip
       }
 
-      let columnIndex = -1;
+      let xPos = null;
 
       if (frequency !== null && rootFrequency !== null) {
+        // Continuous log-frequency → x mapping (no snapping)
         const semitoneOffset = 12 * Math.log2(frequency / rootFrequency);
-        const rounded = Math.round(semitoneOffset);
-        // Map to column: root = column 12
-        const col = rounded + OCTAVES_BELOW * SEMITONES_PER_OCTAVE;
-        if (col >= 0 && col < NUM_COLUMNS) {
-          columnIndex = col;
-        }
+        const col = semitoneOffset + OCTAVES_BELOW * SEMITONES_PER_OCTAVE;
+        xPos = col * columnWidth + columnWidth / 2;
       }
 
       dataPoints.push({
         frequency: frequency,
-        columnIndex: columnIndex,
+        xPos: xPos,
         dbLevel: dbLevel,
       });
 
@@ -257,14 +254,14 @@ const PianoRenderer = (function () {
       // Render pitch line. Data point index 0 = oldest (bottom), last = newest (top).
       // y position: newest at top (small y), oldest at bottom (large y).
       // Continuous segments of valid points are stroked as one polyline.
-      // Gaps (columnIndex < 0) break the path.
+      // Gaps (xPos == null) break the path. xPos is a continuous pixel position.
 
       let segmentActive = false;
 
       for (let i = firstVisibleRow; i <= lastVisibleRow; i++) {
         const dp = dataPoints[i];
 
-        if (dp.columnIndex < 0) {
+        if (dp.xPos == null) {
           if (segmentActive) {
             ctx.stroke();
             ctx.beginPath();
@@ -273,8 +270,7 @@ const PianoRenderer = (function () {
           continue;
         }
 
-        const col = columns[dp.columnIndex];
-        const x = col.x + col.width / 2;
+        const x = dp.xPos;
         const y = (totalRows - 1 - i) * PIXELS_PER_ROW + PIXELS_PER_ROW / 2;
 
         if (!segmentActive) {

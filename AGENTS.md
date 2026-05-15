@@ -1,6 +1,6 @@
 # AGENTS.md — Melody Plotter
 
-Browser-based pitch visualizer. Captures mic audio, runs FFT to detect dominant frequency, snaps the first detected tone to the closest equal-tempered note (A4=440Hz) and centers the piano roll around it. Plots on a scrolling 36-key piano roll with actual note names and octave numbers.
+Browser-based pitch visualizer. Captures mic audio, runs FFT to detect dominant frequency, snaps the first detected tone to the closest equal-tempered note (A4=440Hz) and centers the piano roll around it. Plots on a scrolling 36-key piano roll.
 
 ## Files (5 total, ~1000 lines, zero dependencies)
 
@@ -32,13 +32,5 @@ Mic → AudioContext → AnalyserNode(4096 FFT) → setTimeout(40ms) → getByte
   → resizeCanvas() → render() visible viewport → auto-scroll to top
 ```
 
-Range calibration: first detected tone is snapped to closest equal-tempered note (A4 = 440 Hz) and mapped to column 13. The piano roll spans 1 octave below and 1 octave above that note, with actual note names + octave numbers on the labels (e.g. A4, C#5). Piano keys follow actual black/white note pattern.
-
-## Common change targets
-
-- **Threshold/FFT/sample rate**: `js/audio-processor.js` (named constants at top)
-- **Visuals (color, line width, key styles)**: `js/piano-renderer.js` constants + `style.css`
-- **Octave range**: `js/piano-renderer.js` (`OCTAVES_BELOW`, `OCTAVES_ABOVE`) — also update `NUM_COLUMNS` and center offset
-- **Layout/buttons**: `style.css`
-- **State machine/UX**: `js/app.js`
+Range calibration: first detected tone is snapped to closest equal-tempered note (A4 = 440 Hz) and mapped to column 13. The piano roll spans 1 octave below and 1 octave above that note, with note names + octave numbers on the labels. Piano keys follow actual black/white note pattern.
 
