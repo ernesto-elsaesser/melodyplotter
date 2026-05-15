@@ -1,4 +1,4 @@
-# AGENTS.md — Melody Plotter (high-level summary)
+# AGENTS.md — Melody Plotter
 
 Browser-based pitch visualizer. Captures mic audio, runs FFT to detect dominant frequency, snaps the first detected tone to the closest equal-tempered note (A4=440Hz) and centers the piano roll around it. Plots on a scrolling 36-key piano roll with actual note names and octave numbers.
 
@@ -6,11 +6,11 @@ Browser-based pitch visualizer. Captures mic audio, runs FFT to detect dominant 
 
 | File | Role |
 |------|------|
-| `index.html` | Single-page app shell: buttons, status, labels row, piano roll wrapper (scrollable), scrollback slider, canvas overlay. Scripts loaded in order: audio → piano → app. |
+| `index.html` | Single-page app shell: RECORD/PAUSE/RESET buttons, status, labels row, piano roll wrapper (scrollable), scrollback slider, canvas overlay. Scripts loaded in order: audio → piano → app. |
 | `style.css` | Dark theme, flex column layout (`#app` fills `100dvh`), mobile-first (max-width 800px, 48px touch targets), 36-column piano key grid, button/state styling. |
-| `js/audio-processor.js` | Mic capture + FFT pitch detection. IIFE, exposes `AudioProcessor.create(callbacks)`. Uses 4096-point FFT, 40ms interval, -50dB silence threshold, parabolic interpolation. State machine: start/pause/stop with stream lifecycle management. |
+| `js/audio-processor.js` | Mic capture + FFT pitch detection. IIFE, exposes `AudioProcessor.create(callbacks)`. Uses 4096-point FFT, 40ms interval, -25dB silence threshold, parabolic interpolation. State machine: start/pause/stop with stream lifecycle management. |
 | `js/piano-renderer.js` | Piano roll DOM + canvas rendering. IIFE, exposes `PianoRenderer.create(options)`. Builds 36-column HTML key grid, overlay canvas draws red pitch polyline. 4px per data row, newest at top, visible-viewport-only rendering on scroll. First detected note = column 13. |
-| `js/app.js` | Controller/state machine. IIFE, auto-runs. Wires audio callbacks → renderer. Manages IDLE → RECORDING → PAUSED → STOPPED transitions, button states, scrollback controls. |
+| `js/app.js` | Controller/state machine. IIFE, auto-runs. Wires audio callbacks → renderer. 3-state: IDLE → RECORDING ↔ PAUSED. RESET button (cyan) transitions PAUSED → IDLE, clears history and releases mic. |
 
 ## Module pattern
 

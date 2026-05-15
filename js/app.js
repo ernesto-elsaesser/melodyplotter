@@ -6,7 +6,7 @@
   // --- DOM references ---
   const btnRecord = document.getElementById('btn-record');
   const btnPause  = document.getElementById('btn-pause');
-  const btnStop   = document.getElementById('btn-stop');
+  const btnReset  = document.getElementById('btn-reset');
   const statusEl  = document.getElementById('status');
   const wrapperEl = document.getElementById('piano-roll-wrapper');
   const keysEl    = document.getElementById('piano-keys');
@@ -17,7 +17,7 @@
   const btnLatest = document.getElementById('btn-scroll-latest');
 
   // --- State ---
-  const State = { IDLE: 'idle', RECORDING: 'recording', PAUSED: 'paused', STOPPED: 'stopped' };
+  const State = { IDLE: 'idle', RECORDING: 'recording', PAUSED: 'paused' };
   let state = State.IDLE;
 
   // --- Modules ---
@@ -44,37 +44,30 @@
   });
 
   // --- UI helpers ---
-  function setButtons(recording, paused, stopped) {
+  function setButtons(recording, paused) {
     btnRecord.disabled = recording;
     btnPause.disabled = !recording;
-    btnStop.disabled = !recording && !paused;
+    btnReset.disabled = !paused;
   }
 
   function enterState(newState) {
     state = newState;
     switch (state) {
       case State.IDLE:
-        setButtons(false, false, true);
+        setButtons(false, false);
         renderer.setAutoScroll(false);
         renderer.showScrollbackControls(false);
         statusEl.className = '';
         break;
       case State.RECORDING:
-        setButtons(true, false, false);
+        setButtons(true, false);
         renderer.setAutoScroll(true);
         renderer.showScrollbackControls(false);
         renderer.scrollToLatest();
         statusEl.className = 'recording';
         break;
       case State.PAUSED:
-        setButtons(false, false, false);
-        renderer.setAutoScroll(false);
-        renderer.showScrollbackControls(true);
-        renderer.updateSlider();
-        statusEl.className = '';
-        break;
-      case State.STOPPED:
-        setButtons(false, false, true);
+        setButtons(false, true);
         renderer.setAutoScroll(false);
         renderer.showScrollbackControls(true);
         renderer.updateSlider();
@@ -107,16 +100,10 @@
     enterState(State.PAUSED);
   });
 
-  btnStop.addEventListener('click', () => {
+  btnReset.addEventListener('click', () => {
     processor.stop();
-    // Keep display for review, but root is cleared
-    // Resetting labels since root is gone
-    const cells = labelsEl.querySelectorAll('.label-cell');
-    cells.forEach(cell => {
-      const freqSpan = cell.querySelector('.label-freq');
-      if (freqSpan) freqSpan.textContent = '\u2014';
-    });
-    enterState(State.STOPPED);
+    renderer.clear();
+    enterState(State.IDLE);
   });
 
   // --- Scrollback controls ---
