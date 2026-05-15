@@ -12,10 +12,10 @@ const PianoRenderer = (function () {
   const PLOT_DOT_RADIUS = 3;
 
   const OCTAVES_BELOW = 1;
-  const OCTAVES_ABOVE = 2;
-  const TOTAL_OCTAVES = OCTAVES_BELOW + 1 + OCTAVES_ABOVE; // = 4
+  const OCTAVES_ABOVE = 1;
+  const TOTAL_OCTAVES = OCTAVES_BELOW + 1 + OCTAVES_ABOVE; // = 3
   const SEMITONES_PER_OCTAVE = 12;
-  const NUM_COLUMNS = TOTAL_OCTAVES * SEMITONES_PER_OCTAVE; // = 48
+  const NUM_COLUMNS = TOTAL_OCTAVES * SEMITONES_PER_OCTAVE; // = 36
 
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const IS_BLACK = [false, true, false, true, false, false, true, false, true, false, true, false];

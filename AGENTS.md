@@ -1,15 +1,15 @@
 # AGENTS.md — Melody Plotter (high-level summary)
 
-Browser-based pitch visualizer. Captures mic audio, runs FFT to detect dominant frequency, transposes to a relative C scale, and plots on a scrolling 48-key piano roll.
+Browser-based pitch visualizer. Captures mic audio, runs FFT to detect dominant frequency, transposes to a relative C scale, and plots on a scrolling 36-key piano roll.
 
 ## Files (5 total, ~1000 lines, zero dependencies)
 
 | File | Role |
 |------|------|
 | `index.html` | Single-page app shell: buttons, status, labels row, piano roll wrapper (scrollable), scrollback slider, canvas overlay. Scripts loaded in order: audio → piano → app. |
-| `style.css` | Dark theme, flex column layout (`#app` fills `100dvh`), mobile-first (max-width 800px, 48px touch targets), 48-column piano key grid, button/state styling. |
+| `style.css` | Dark theme, flex column layout (`#app` fills `100dvh`), mobile-first (max-width 800px, 48px touch targets), 36-column piano key grid, button/state styling. |
 | `js/audio-processor.js` | Mic capture + FFT pitch detection. IIFE, exposes `AudioProcessor.create(callbacks)`. Uses 4096-point FFT, 40ms interval, -50dB silence threshold, parabolic interpolation. State machine: start/pause/stop with stream lifecycle management. |
-| `js/piano-renderer.js` | Piano roll DOM + canvas rendering. IIFE, exposes `PianoRenderer.create(options)`. Builds 48-column HTML key grid, overlay canvas draws red pitch polyline. 4px per data row, newest at top, visible-viewport-only rendering on scroll. Root C = column 12. |
+| `js/piano-renderer.js` | Piano roll DOM + canvas rendering. IIFE, exposes `PianoRenderer.create(options)`. Builds 36-column HTML key grid, overlay canvas draws red pitch polyline. 4px per data row, newest at top, visible-viewport-only rendering on scroll. Root C = column 12. |
 | `js/app.js` | Controller/state machine. IIFE, auto-runs. Wires audio callbacks → renderer. Manages IDLE → RECORDING → PAUSED → STOPPED transitions, button states, scrollback controls. |
 
 ## Module pattern
@@ -21,7 +21,7 @@ All JS uses IIFEs attaching to `window.*` (e.g., `window.AudioProcessor`). Class
 - **FFT**: 4096 points, no smoothing (`smoothingTimeConstant = 0`)
 - **Sample interval**: 40 ms (~25 fps) via `setTimeout`
 - **Silence threshold**: -50 dB
-- **Piano roll**: 4 octaves (1 below root, 2 above) = 48 columns, 4 px/row
+- **Piano roll**: 3 octaves (1 below root, 1 above) = 36 columns, 4 px/row
 
 ## Data flow
 
