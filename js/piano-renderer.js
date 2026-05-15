@@ -168,12 +168,13 @@ const PianoRenderer = (function () {
 
       totalRows++;
       resizeCanvas();
-      render();
 
-      // Auto-scroll to newest (top) during recording
+      // Auto-scroll to newest (top) before render so the correct viewport is drawn
       if (autoScroll) {
         wrapperEl.scrollTop = 0;
       }
+
+      render();
     }
 
     /**
@@ -206,10 +207,12 @@ const PianoRenderer = (function () {
       const scrollTop = wrapperEl.scrollTop;
       const viewHeight = wrapperEl.clientHeight;
 
-      const firstVisibleRow = Math.floor(scrollTop / PIXELS_PER_ROW);
+      // Data is newest-at-top: row (totalRows-1) is at y≈0, row 0 at bottom.
+      // scrollTop=0 shows newest data; scrollTop=max shows oldest.
+      const firstVisibleRow = Math.max(0, totalRows - Math.ceil((scrollTop + viewHeight) / PIXELS_PER_ROW));
       const lastVisibleRow = Math.min(
         totalRows - 1,
-        Math.ceil((scrollTop + viewHeight) / PIXELS_PER_ROW)
+        totalRows - 1 - Math.floor(scrollTop / PIXELS_PER_ROW)
       );
 
       ctx.clearRect(0, 0, width, height);
