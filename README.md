@@ -24,17 +24,6 @@ FFT with 4096-point window and no smoothing, sampled every 40 ms (~25 fps). Para
 
 The piano key background is built from HTML divs. A transparent canvas overlays it and draws only the red pitch line. Both layers grow vertically as data accumulates (4 px per sample). A scrollable container holds both; during recording it auto-scrolls to keep the newest data visible at the top. When paused or stopped, native scroll and a range slider let you navigate history.
 
-### Tunable parameters
-
-All key parameters are defined as named constants at the top of the relevant modules:
-
-- Minimum dB threshold (-50 dB)
-- FFT size (4096)
-- Sampling interval (40 ms)
-- Visible history window (5 seconds, approximated by viewport height)
-- Pixels per data row (4 px)
-- Octave range (1 below root + 2 above)
-
 ### State machine
 
 - **Idle** — RECORD button active, no audio stream.

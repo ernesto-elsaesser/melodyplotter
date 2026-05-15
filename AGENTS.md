@@ -20,7 +20,7 @@ All JS uses IIFEs attaching to `window.*` (e.g., `window.AudioProcessor`). Class
 
 - **FFT**: 4096 points, no smoothing (`smoothingTimeConstant = 0`)
 - **Sample interval**: 40 ms (~25 fps) via `setTimeout`
-- **Silence threshold**: -50 dB
+- **Silence threshold**: -25 dB
 - **Piano roll**: 3 octaves (1 below root, 1 above) = 36 columns, 4 px/row
 
 ## Data flow
@@ -42,4 +42,3 @@ Root calibration: first detected tone sets `rootFrequency`, labeled C. All other
 - **Layout/buttons**: `style.css`
 - **State machine/UX**: `js/app.js`
 
-Full details in README.md (what it does, design rationale) and FILES.md (detailed codebase guide).

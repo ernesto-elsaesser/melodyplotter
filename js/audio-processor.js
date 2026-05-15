@@ -7,7 +7,7 @@
 
 const AudioProcessor = (function () {
   // --- Tunable constants ---
-  const MIN_DB_THRESHOLD = -50;   // dB below which signal is treated as silence
+  const MIN_DB_THRESHOLD = -25;   // dB below which signal is treated as silence
   const FFT_SIZE = 4096;          // FFT window size (good resolution for whistling)
   const SAMPLE_INTERVAL_MS = 40;  // ~25 fps pitch detection
 
