@@ -103,7 +103,7 @@ h1 {
   display: flex;
   flex-shrink: 0;
   position: relative;
-  height: 62px;
+  height: 68px;
   font-size: 0.7rem;
   overflow: hidden;
   border-bottom: 1px solid #444;
@@ -127,13 +127,8 @@ h1 {
   border-right: none;
 }
 
-.label-cell.root {
-  color: #ff6b6b;
-  font-weight: 700;
-}
-
 .label-note {
-  height: 12px;
+  height: 16px;
 }
 
 .label-freq {

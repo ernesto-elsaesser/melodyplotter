@@ -163,11 +163,6 @@ const PianoRenderer = (function () {
 
         noteSpan.textContent = col.isOctaveStart ? col.noteName + col.octave : col.noteName;
         freqSpan.textContent = col.frequency !== null ? Math.round(col.frequency) + ' Hz' : '\u2014';
-
-        cell.classList.remove('root');
-        if (idx === OCTAVES_BELOW * SEMITONES_PER_OCTAVE) {
-          cell.classList.add('root');
-        }
       });
 
       return snapped;
