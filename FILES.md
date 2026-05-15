@@ -1,4 +1,4 @@
-# AGENTS.md — Melody Plotter Codebase Guide
+# GUIDE.md — Melody Plotter Codebase Guide
 
 ## Overview
 
