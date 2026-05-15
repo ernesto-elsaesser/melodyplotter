@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Melody Plotter</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <h1>Melody Plotter</h1>
+
+    <div id="controls">
+      <button id="btn-record" class="btn btn-record">&#9679; RECORD</button>
+      <button id="btn-pause" class="btn btn-pause" disabled>&#10074;&#10074; PAUSE</button>
+      <button id="btn-stop" class="btn btn-stop" disabled>&#9632; STOP</button>
+    </div>
+
+    <div id="status">Press RECORD and whistle or sing a note</div>
+
+    <div id="labels-row"></div>
+
+    <div id="piano-roll-wrapper">
+      <div id="piano-roll-inner">
+        <div id="piano-keys"></div>
+        <canvas id="pitch-canvas"></canvas>
+      </div>
+    </div>
+
+    <div id="scrollback-control">
+      <label for="scrollback-slider">History:</label>
+      <input type="range" id="scrollback-slider" min="0" max="100" value="100" step="1">
+      <button id="btn-scroll-latest" class="btn-small">Latest</button>
+    </div>
+  </div>
+
+  <script src="js/audio-processor.js"></script>
+  <script src="js/piano-renderer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
