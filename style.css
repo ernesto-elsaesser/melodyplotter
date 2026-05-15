@@ -75,7 +75,7 @@ h1 {
 }
 
 .btn-reset {
-  background: #00d2d3;
+  background: #67b1b1;
   color: #fff;
 }
 
@@ -103,7 +103,7 @@ h1 {
   display: flex;
   flex-shrink: 0;
   position: relative;
-  height: 86px;
+  height: 62px;
   font-size: 0.7rem;
   overflow: hidden;
   border-bottom: 1px solid #444;
@@ -134,10 +134,6 @@ h1 {
 
 .label-note {
   height: 12px;
-}
-
-.label-octave {
-  height: 24px;
 }
 
 .label-freq {
