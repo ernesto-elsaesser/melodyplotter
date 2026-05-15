@@ -29,9 +29,8 @@
     onPitch: function (frequency, dbLevel) {
       renderer.addDataPoint(frequency, dbLevel);
     },
-    onRootDetected: function (rootFreq) {
-      renderer.setRootFrequency(rootFreq);
-      statusEl.textContent = 'Recording...';
+    onCalibrate: function (frequency) {
+      renderer.calibrate(frequency);
       statusEl.className = 'recording';
     },
     onStatus: function (msg) {

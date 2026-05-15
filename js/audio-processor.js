@@ -44,9 +44,9 @@ const AudioProcessor = (function () {
 
   /**
    * Create a new AudioProcessor.
-   * @param {Object} callbacks - { onPitch, onRootDetected, onStatus }
+   * @param {Object} callbacks - { onPitch, onCalibrate, onStatus }
    *   onPitch(frequencyHz, dbLevel, columnIndex) - called every detection cycle
-   *   onRootDetected(rootFrequencyHz) - called once when root is calibrated
+   *   onCalibrate(frequencyHz) - called once on first detection
    *   onStatus(message) - status text updates
    */
   function create(callbacks) {
@@ -56,9 +56,9 @@ const AudioProcessor = (function () {
     let analyser = null;
     let stream = null;
     let source = null;
-    let rootFrequency = null;
     let isRunning = false;
     let isPaused = false;
+    let isCalibrated = false;
     let timerId = null;
     let buffer = null;          // Uint8Array for FFT output
 
@@ -70,10 +70,9 @@ const AudioProcessor = (function () {
       if (isRunning && !isPaused) return;
 
       if (isPaused) {
-        // Resume from pause – keep existing root
         isPaused = false;
         scheduleNext();
-        if (cb.onStatus) cb.onStatus(rootFrequency ? 'Recording...' : 'Listening for root note...');
+        if (cb.onStatus) cb.onStatus(isCalibrated ? 'Recording ...' : 'Listening for notes ...');
         return;
       }
 
@@ -104,11 +103,11 @@ const AudioProcessor = (function () {
         // Do NOT connect to destination – we don't want feedback
 
         buffer = new Uint8Array(analyser.frequencyBinCount);
-        rootFrequency = null;
+        isCalibrated = false;
         isRunning = true;
         isPaused = false;
 
-        if (cb.onStatus) cb.onStatus('Listening for root note...');
+        if (cb.onStatus) cb.onStatus('Listening for notes ...');
         scheduleNext();
       } catch (err) {
         console.error('Microphone access failed:', err);
@@ -154,13 +153,6 @@ const AudioProcessor = (function () {
       buffer = null;
       rootFrequency = null;
       if (cb.onStatus) cb.onStatus('Stopped');
-    }
-
-    /**
-     * Get the current root frequency, or null if not calibrated.
-     */
-    function getRootFrequency() {
-      return rootFrequency;
     }
 
     /**
@@ -210,13 +202,10 @@ const AudioProcessor = (function () {
       const refinedBin = interpolatePeak(maxBin, buffer);
       const frequency = binToFrequency(refinedBin, sampleRate, fftSize);
 
-      // Root note detection (first valid tone)
-      if (rootFrequency === null) {
-        rootFrequency = frequency;
-        if (cb.onRootDetected) cb.onRootDetected(rootFrequency);
-        if (cb.onStatus) {
-          cb.onStatus('Root: ' + Math.round(rootFrequency) + ' Hz — Recording...');
-        }
+      if (!isCalibrated) {
+        isCalibrated = true;
+        if (cb.onCalibrate) cb.onCalibrate(frequency);
+        if (cb.onStatus) cb.onStatus('Recording...');
       }
 
       if (cb.onPitch) cb.onPitch(frequency, dbLevel, -1); // columnIndex computed by renderer
@@ -226,7 +215,6 @@ const AudioProcessor = (function () {
       start,
       pause,
       stop,
-      getRootFrequency,
     };
   }
 

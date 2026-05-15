@@ -83,11 +83,11 @@ const PianoRenderer = (function () {
           index: i,
           x: i * columnWidth,
           width: columnWidth,
-          noteName: '',        // filled in by setRootFrequency
-          isBlack: false,      // filled in by setRootFrequency
-          isOctaveStart: false, // filled in by setRootFrequency
-          octave: null,        // filled in by setRootFrequency
-          frequency: null,     // set after root calibration
+          noteName: '',
+          isBlack: false,
+          isOctaveStart: false,
+          octave: null,
+          frequency: null,
         });
       }
 
@@ -123,9 +123,9 @@ const PianoRenderer = (function () {
     }
 
     /**
-     * Set the root frequency and update column frequency labels.
+     * Set the piano roll range and update column labels.
      */
-    function setRootFrequency(freq) {
+    function calibrate(freq) {
       const snapped = snapToNote(freq);
       if (!snapped) return null;
 
@@ -401,7 +401,7 @@ const PianoRenderer = (function () {
     window.addEventListener('resize', () => {
       if (columns.length > 0) {
         buildPianoKeys();
-        if (rootFrequency) setRootFrequency(rootFrequency);
+        if (rootFrequency) calibrate(rootFrequency);
         resizeCanvas();
         render();
       }
@@ -409,7 +409,7 @@ const PianoRenderer = (function () {
 
     return {
       buildPianoKeys,
-      setRootFrequency,
+      calibrate,
       addDataPoint,
       clear,
       setAutoScroll,
