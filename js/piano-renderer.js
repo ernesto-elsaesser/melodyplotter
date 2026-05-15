@@ -21,6 +21,26 @@ const PianoRenderer = (function () {
   const IS_BLACK = [false, true, false, true, false, false, true, false, true, false, true, false];
 
   /**
+   * Snap a frequency to the closest equal-tempered note (A4 = 440 Hz).
+   * Returns { frequency, noteIndex, octave, noteName } or null for invalid input.
+   */
+  function snapToNote(frequency) {
+    if (frequency == null || frequency <= 0) return null;
+    const semitoneOffset = Math.round(12 * Math.log2(frequency / 440));
+    // absoluteSemitone: 0 = C0. A4 = noteIndex 9 + 4*12 = 57
+    const absoluteSemitone = semitoneOffset + 9 + 4 * 12;
+    const noteIndex = ((absoluteSemitone % 12) + 12) % 12;
+    const octave = Math.floor(absoluteSemitone / 12);
+    const snappedFreq = 440 * Math.pow(2, semitoneOffset / 12);
+    return {
+      frequency: snappedFreq,
+      noteIndex: noteIndex,
+      octave: octave,
+      noteName: NOTE_NAMES[noteIndex] + octave,
+    };
+  }
+
+  /**
    * Create a PianoRenderer.
    * @param {Object} options
    * @param {HTMLElement} options.keysEl      - container for piano key divs (#piano-keys)
@@ -59,35 +79,28 @@ const PianoRenderer = (function () {
 
       columns = [];
       for (let i = 0; i < NUM_COLUMNS; i++) {
-        const octave = Math.floor(i / SEMITONES_PER_OCTAVE) - OCTAVES_BELOW;
-        const semitone = i % SEMITONES_PER_OCTAVE;
-        const noteName = NOTE_NAMES[semitone];
-        const isBlack = IS_BLACK[semitone];
-        const isOctaveStart = (semitone === 0);
-
         columns.push({
           index: i,
           x: i * columnWidth,
           width: columnWidth,
-          noteName: noteName,
-          isBlack: isBlack,
-          isOctaveStart: isOctaveStart,
-          octave: octave,
-          frequency: null, // set after root calibration
+          noteName: '',        // filled in by setRootFrequency
+          isBlack: false,      // filled in by setRootFrequency
+          isOctaveStart: false, // filled in by setRootFrequency
+          octave: null,        // filled in by setRootFrequency
+          frequency: null,     // set after root calibration
         });
       }
 
-      // Render piano key divs
+      // Render piano key divs (neutral until root calibration)
       keysEl.innerHTML = '';
       for (const col of columns) {
         const div = document.createElement('div');
-        div.className = 'piano-key ' + (col.isBlack ? 'black' : 'white') +
-                        (col.isOctaveStart ? ' octave-start' : '');
+        div.className = 'piano-key white';
         div.dataset.index = col.index;
         keysEl.appendChild(div);
       }
 
-      // Render labels row
+      // Render labels row (placeholders until root calibration)
       labelsEl.innerHTML = '';
       for (const col of columns) {
         const cell = document.createElement('div');
@@ -96,7 +109,7 @@ const PianoRenderer = (function () {
 
         const noteSpan = document.createElement('span');
         noteSpan.className = 'label-note';
-        noteSpan.textContent = col.noteName;
+        noteSpan.textContent = '\u2014'; // em dash placeholder
 
         const freqSpan = document.createElement('span');
         freqSpan.className = 'label-freq';
@@ -104,10 +117,6 @@ const PianoRenderer = (function () {
 
         cell.appendChild(noteSpan);
         cell.appendChild(freqSpan);
-
-        if (col.octave === 0 && col.noteName === 'C') {
-          cell.classList.add('root');
-        }
 
         labelsEl.appendChild(cell);
       }
@@ -117,23 +126,51 @@ const PianoRenderer = (function () {
      * Set the root frequency and update column frequency labels.
      */
     function setRootFrequency(freq) {
-      rootFrequency = freq;
+      const snapped = snapToNote(freq);
+      if (!snapped) return null;
 
-      for (const col of columns) {
-        const semitoneOffset = col.index - (OCTAVES_BELOW * SEMITONES_PER_OCTAVE);
-        col.frequency = rootFrequency * Math.pow(2, semitoneOffset / SEMITONES_PER_OCTAVE);
+      rootFrequency = snapped.frequency;
+
+      for (let i = 0; i < NUM_COLUMNS; i++) {
+        const semitoneOffset = i - OCTAVES_BELOW * SEMITONES_PER_OCTAVE;
+        const absoluteSemitone = snapped.octave * 12 + snapped.noteIndex + semitoneOffset;
+        const noteIndex = ((absoluteSemitone % 12) + 12) % 12;
+        const octave = Math.floor(absoluteSemitone / 12);
+
+        columns[i].noteName = NOTE_NAMES[noteIndex];
+        columns[i].octave = octave;
+        columns[i].isBlack = IS_BLACK[noteIndex];
+        columns[i].isOctaveStart = (noteIndex === 0);
+        columns[i].frequency = snapped.frequency * Math.pow(2, semitoneOffset / 12);
       }
 
-      // Update label cells
+      // Update key divs with correct black/white classes
+      const keyDivs = keysEl.querySelectorAll('.piano-key');
+      keyDivs.forEach(div => {
+        const idx = parseInt(div.dataset.index, 10);
+        const col = columns[idx];
+        div.className = 'piano-key ' + (col.isBlack ? 'black' : 'white') +
+                        (col.isOctaveStart ? ' octave-start' : '');
+      });
+
+      // Update label cells with actual note names, octaves and frequencies
       const cells = labelsEl.querySelectorAll('.label-cell');
       cells.forEach(cell => {
         const idx = parseInt(cell.dataset.index, 10);
         const col = columns[idx];
+        const noteSpan = cell.querySelector('.label-note');
         const freqSpan = cell.querySelector('.label-freq');
-        if (col.frequency !== null) {
-          freqSpan.textContent = Math.round(col.frequency) + ' Hz';
+
+        noteSpan.textContent = col.noteName + col.octave;
+        freqSpan.textContent = col.frequency !== null ? Math.round(col.frequency) + ' Hz' : '\u2014';
+
+        cell.classList.remove('root');
+        if (idx === OCTAVES_BELOW * SEMITONES_PER_OCTAVE) {
+          cell.classList.add('root');
         }
       });
+
+      return snapped;
     }
 
     /**
@@ -153,7 +190,7 @@ const PianoRenderer = (function () {
       if (frequency !== null && rootFrequency !== null) {
         const semitoneOffset = 12 * Math.log2(frequency / rootFrequency);
         const rounded = Math.round(semitoneOffset);
-        // Map to column: root = column 12 (octave 0, C)
+        // Map to column: root = column 12
         const col = rounded + OCTAVES_BELOW * SEMITONES_PER_OCTAVE;
         if (col >= 0 && col < NUM_COLUMNS) {
           columnIndex = col;
@@ -268,7 +305,13 @@ const PianoRenderer = (function () {
       dataPoints = [];
       totalRows = 0;
       rootFrequency = null;
-      columns.forEach(c => c.frequency = null);
+      columns.forEach(c => {
+        c.frequency = null;
+        c.noteName = '';
+        c.octave = null;
+        c.isBlack = false;
+        c.isOctaveStart = false;
+      });
 
       const width = keysEl.clientWidth;
       keysEl.style.height = '0px';
@@ -277,11 +320,20 @@ const PianoRenderer = (function () {
       canvasEl.style.width = width + 'px';
       canvasEl.style.height = '0px';
 
+      // Reset key divs to neutral white
+      const keyDivs = keysEl.querySelectorAll('.piano-key');
+      keyDivs.forEach(div => {
+        div.className = 'piano-key white';
+      });
+
       // Reset labels
       const cells = labelsEl.querySelectorAll('.label-cell');
       cells.forEach(cell => {
+        const noteSpan = cell.querySelector('.label-note');
         const freqSpan = cell.querySelector('.label-freq');
+        if (noteSpan) noteSpan.textContent = '\u2014';
         if (freqSpan) freqSpan.textContent = '\u2014';
+        cell.classList.remove('root');
       });
     }
 

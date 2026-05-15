@@ -1,6 +1,6 @@
 # AGENTS.md — Melody Plotter (high-level summary)
 
-Browser-based pitch visualizer. Captures mic audio, runs FFT to detect dominant frequency, transposes to a relative C scale, and plots on a scrolling 36-key piano roll.
+Browser-based pitch visualizer. Captures mic audio, runs FFT to detect dominant frequency, snaps root to closest equal-tempered note (A4=440Hz), and plots on a scrolling 36-key piano roll with actual note names and octave numbers.
 
 ## Files (5 total, ~1000 lines, zero dependencies)
 
@@ -32,7 +32,7 @@ Mic → AudioContext → AnalyserNode(4096 FFT) → setTimeout(40ms) → getByte
   → resizeCanvas() → render() visible viewport → auto-scroll to top
 ```
 
-Root calibration: first detected tone sets `rootFrequency`, labeled C. All other notes computed via equal temperament: `f = root * 2^(semitoneOffset/12)`.
+Root calibration: first detected tone is snapped to closest equal-tempered note (A4 = 440 Hz). Root column always mapped to column 12 (13th column). Labels show actual note names + octave numbers (e.g. A4, C#5). Piano keys follow actual black/white note pattern.
 
 ## Common change targets
 

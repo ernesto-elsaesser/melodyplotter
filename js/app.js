@@ -30,8 +30,12 @@
       renderer.addDataPoint(frequency, dbLevel);
     },
     onRootDetected: function (rootFreq) {
-      renderer.setRootFrequency(rootFreq);
-      statusEl.textContent = 'Root: ' + Math.round(rootFreq) + ' Hz \u2014 Recording...';
+      const snapped = renderer.setRootFrequency(rootFreq);
+      if (snapped) {
+        statusEl.textContent = 'Root: ' + snapped.noteName + ' \u2014 Recording...';
+      } else {
+        statusEl.textContent = 'Recording...';
+      }
       statusEl.className = 'recording';
     },
     onStatus: function (msg) {
