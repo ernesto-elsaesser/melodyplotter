@@ -103,7 +103,7 @@ h1 {
   display: flex;
   flex-shrink: 0;
   position: relative;
-  height: 70px;
+  height: 80px;
   font-size: 0.6rem;
   overflow: hidden;
   border-bottom: 1px solid #444;
@@ -135,6 +135,13 @@ h1 {
 .label-note {
   font-size: 0.6rem;
   line-height: 1;
+}
+
+.label-octave {
+  font-size: 0.45rem;
+  line-height: 1;
+  color: #888;
+  min-height: 0.55em;
 }
 
 .label-freq {

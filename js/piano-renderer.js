@@ -111,11 +111,15 @@ const PianoRenderer = (function () {
         noteSpan.className = 'label-note';
         noteSpan.textContent = '\u2014'; // em dash placeholder
 
+        const octaveSpan = document.createElement('span');
+        octaveSpan.className = 'label-octave';
+
         const freqSpan = document.createElement('span');
         freqSpan.className = 'label-freq';
         freqSpan.textContent = '\u2014'; // em dash placeholder
 
         cell.appendChild(noteSpan);
+        cell.appendChild(octaveSpan);
         cell.appendChild(freqSpan);
 
         labelsEl.appendChild(cell);
@@ -159,9 +163,11 @@ const PianoRenderer = (function () {
         const idx = parseInt(cell.dataset.index, 10);
         const col = columns[idx];
         const noteSpan = cell.querySelector('.label-note');
+        const octaveSpan = cell.querySelector('.label-octave');
         const freqSpan = cell.querySelector('.label-freq');
 
-        noteSpan.textContent = col.noteName + col.octave;
+        noteSpan.textContent = col.noteName;
+        octaveSpan.textContent = col.isOctaveStart ? col.octave : '';
         freqSpan.textContent = col.frequency !== null ? Math.round(col.frequency) + ' Hz' : '\u2014';
 
         cell.classList.remove('root');
@@ -330,8 +336,10 @@ const PianoRenderer = (function () {
       const cells = labelsEl.querySelectorAll('.label-cell');
       cells.forEach(cell => {
         const noteSpan = cell.querySelector('.label-note');
+        const octaveSpan = cell.querySelector('.label-octave');
         const freqSpan = cell.querySelector('.label-freq');
         if (noteSpan) noteSpan.textContent = '\u2014';
+        if (octaveSpan) octaveSpan.textContent = '';
         if (freqSpan) freqSpan.textContent = '\u2014';
         cell.classList.remove('root');
       });
