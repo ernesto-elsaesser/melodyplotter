@@ -100,7 +100,7 @@ const PianoRenderer = (function () {
         keysEl.appendChild(div);
       }
 
-      // Render labels row (placeholders until root calibration)
+      // Render labels row (empty until root calibration)
       labelsEl.innerHTML = '';
       for (const col of columns) {
         const cell = document.createElement('div');
@@ -109,11 +109,9 @@ const PianoRenderer = (function () {
 
         const noteSpan = document.createElement('span');
         noteSpan.className = 'label-note';
-        noteSpan.textContent = '\u2014'; // em dash placeholder
 
         const freqSpan = document.createElement('span');
         freqSpan.className = 'label-freq';
-        freqSpan.textContent = '\u2014'; // em dash placeholder
 
         cell.appendChild(noteSpan);
         cell.appendChild(freqSpan);
