@@ -6,7 +6,7 @@ A browser-based tool that visualizes the pitch of a whistled or sung melody on a
 
 1. Captures microphone audio via the Web Audio API.
 2. Runs FFT analysis to find the dominant frequency in each time slice.
-4. Plots pitches on a 3-octave piano roll (centered around first detected tone), scrolling from top (newest) to bottom (oldest).
+4. Plots pitches on a fixed C5–C7 piano roll (25 semitones), scrolling from top (newest) to bottom (oldest).
 5. When paused, lets you scroll back through recorded history.
 
 ## Design Decisions
@@ -17,7 +17,7 @@ FFT with 4096-point window and no smoothing, sampled every 40 ms (~25 fps). Para
 
 ### Piano roll layout
 
-36 equal-width chromatic columns, colored to distinguish natural notes from sharps/flats — the same visual convention as a DAW piano roll. Column header labels show note name and frequency in Hertz.
+25 equal-width chromatic columns (C5 through C7), colored to distinguish natural notes from sharps/flats — the same visual convention as a DAW piano roll. The piano key background and column labels are static HTML. Column headers show note name (with octave numbers on C) and frequency in Hertz. Frequencies map continuously to pixel positions via standard MIDI math (A4 = 440 Hz, C5 = MIDI 72).
 
 ### Scrolling model
 

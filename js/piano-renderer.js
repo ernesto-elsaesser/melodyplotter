@@ -1,51 +1,25 @@
 /**
- * PianoRenderer - Builds the HTML piano roll, manages the canvas overlay,
- * renders the pitch plot, and handles scrollback.
+ * PianoRenderer - Manages the canvas overlay for the pitch plot
+ * on top of the static HTML piano roll (C5–C7, 25 semitones).
+ * Handles scrollback and viewport-aware rendering.
  */
 
 const PianoRenderer = (function () {
   // --- Tunable constants ---
   const PIXELS_PER_ROW = 4;        // vertical space per data point
-  const HISTORY_SECONDS = 5;        // seconds visible in viewport (approximate)
-  const PLOT_COLOR = '#ff4757';     // red pitch line
+  const PLOT_COLOR = '#ff4757';    // red pitch line
   const PLOT_LINE_WIDTH = 5;
   const PLOT_DOT_RADIUS = 3;
 
-  const OCTAVES_BELOW = 1;
-  const OCTAVES_ABOVE = 1;
-  const TOTAL_OCTAVES = OCTAVES_BELOW + 1 + OCTAVES_ABOVE; // = 3
-  const SEMITONES_PER_OCTAVE = 12;
-  const NUM_COLUMNS = TOTAL_OCTAVES * SEMITONES_PER_OCTAVE; // = 36
-
-  const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  const IS_BLACK = [false, true, false, true, false, false, true, false, true, false, true, false];
-
-  /**
-   * Snap a frequency to the closest equal-tempered note (A4 = 440 Hz).
-   * Returns { frequency, noteIndex, octave, noteName } or null for invalid input.
-   */
-  function snapToNote(frequency) {
-    if (frequency == null || frequency <= 0) return null;
-    const semitoneOffset = Math.round(12 * Math.log2(frequency / 440));
-    // absoluteSemitone: 0 = C0. A4 = noteIndex 9 + 4*12 = 57
-    const absoluteSemitone = semitoneOffset + 9 + 4 * 12;
-    const noteIndex = ((absoluteSemitone % 12) + 12) % 12;
-    const octave = Math.floor(absoluteSemitone / 12);
-    const snappedFreq = 440 * Math.pow(2, semitoneOffset / 12);
-    return {
-      frequency: snappedFreq,
-      noteIndex: noteIndex,
-      octave: octave,
-      noteName: NOTE_NAMES[noteIndex] + octave,
-    };
-  }
+  // Fixed piano range: C5 (MIDI 72) to C7 (MIDI 96) = 25 semitones
+  const C5_MIDI = 72;
+  const NUM_COLUMNS = 25;          // C5 through C7 inclusive
 
   /**
    * Create a PianoRenderer.
    * @param {Object} options
    * @param {HTMLElement} options.keysEl      - container for piano key divs (#piano-keys)
    * @param {HTMLCanvasElement} options.canvasEl - canvas element (#pitch-canvas)
-   * @param {HTMLElement} options.labelsEl    - container for labels (#labels-row)
    * @param {HTMLElement} options.wrapperEl   - scrollable wrapper (#piano-roll-wrapper)
    * @param {HTMLElement} options.scrollbackEl - scrollback controls container
    * @param {HTMLInputElement} options.sliderEl - scrollback range slider
@@ -53,117 +27,40 @@ const PianoRenderer = (function () {
   function create(options) {
     const keysEl = options.keysEl;
     const canvasEl = options.canvasEl;
-    const labelsEl = options.labelsEl;
     const wrapperEl = options.wrapperEl;
     const scrollbackEl = options.scrollbackEl;
     const sliderEl = options.sliderEl;
 
     const ctx = canvasEl.getContext('2d');
 
-    let rootFrequency = null;
-    let dataPoints = [];         // { frequency, columnIndex, dbLevel }
-    let columns = [];            // { x, width, noteName, isBlack, frequency, octave }
+    let dataPoints = [];         // { frequency, xPos, dbLevel }
     let totalRows = 0;
     let columnWidth = 0;
-    let isScrolling = false;    // user is manually scrolling (paused/stopped)
+    let columnsInitialized = false;
     let autoScroll = true;
 
     /**
-     * Build the column metadata and render the HTML key elements and labels.
-     * Must be called once the container has a width.
+     * Compute column x positions from container width.
+     * Must be called once after layout.
      */
-    function buildPianoKeys() {
+    function initColumns() {
       const containerWidth = keysEl.clientWidth;
       if (containerWidth <= 0) return;
       columnWidth = containerWidth / NUM_COLUMNS;
-
-      columns = [];
-      for (let i = 0; i < NUM_COLUMNS; i++) {
-        columns.push({
-          index: i,
-          x: i * columnWidth,
-          width: columnWidth,
-          noteName: '',
-          isBlack: false,
-          isOctaveStart: false,
-          octave: null,
-          frequency: null,
-        });
-      }
-
-      // Render piano key divs (neutral until root calibration)
-      keysEl.innerHTML = '';
-      for (const col of columns) {
-        const div = document.createElement('div');
-        div.className = 'piano-key white';
-        div.dataset.index = col.index;
-        keysEl.appendChild(div);
-      }
-
-      // Render labels row (empty until root calibration)
-      labelsEl.innerHTML = '';
-      for (const col of columns) {
-        const cell = document.createElement('div');
-        cell.className = 'label-cell';
-        cell.dataset.index = col.index;
-
-        const noteSpan = document.createElement('span');
-        noteSpan.className = 'label-note';
-
-        const freqSpan = document.createElement('span');
-        freqSpan.className = 'label-freq';
-
-        cell.appendChild(noteSpan);
-        cell.appendChild(freqSpan);
-
-        labelsEl.appendChild(cell);
-      }
+      columnsInitialized = true;
     }
 
     /**
-     * Set the piano roll range and update column labels.
+     * Map a frequency to a pixel x position on the C5–C7 piano roll.
+     * Returns null if frequency is out of range or NaN.
      */
-    function calibrate(freq) {
-      const snapped = snapToNote(freq);
-      if (!snapped) return null;
-
-      rootFrequency = snapped.frequency;
-
-      for (let i = 0; i < NUM_COLUMNS; i++) {
-        const semitoneOffset = i - OCTAVES_BELOW * SEMITONES_PER_OCTAVE;
-        const absoluteSemitone = snapped.octave * 12 + snapped.noteIndex + semitoneOffset;
-        const noteIndex = ((absoluteSemitone % 12) + 12) % 12;
-        const octave = Math.floor(absoluteSemitone / 12);
-
-        columns[i].noteName = NOTE_NAMES[noteIndex];
-        columns[i].octave = octave;
-        columns[i].isBlack = IS_BLACK[noteIndex];
-        columns[i].isOctaveStart = (noteIndex === 0);
-        columns[i].frequency = snapped.frequency * Math.pow(2, semitoneOffset / 12);
-      }
-
-      // Update key divs with correct black/white classes
-      const keyDivs = keysEl.querySelectorAll('.piano-key');
-      keyDivs.forEach(div => {
-        const idx = parseInt(div.dataset.index, 10);
-        const col = columns[idx];
-        div.className = 'piano-key ' + (col.isBlack ? 'black' : 'white') +
-                        (col.isOctaveStart ? ' octave-start' : '');
-      });
-
-      // Update label cells with actual note names, octaves and frequencies
-      const cells = labelsEl.querySelectorAll('.label-cell');
-      cells.forEach(cell => {
-        const idx = parseInt(cell.dataset.index, 10);
-        const col = columns[idx];
-        const noteSpan = cell.querySelector('.label-note');
-        const freqSpan = cell.querySelector('.label-freq');
-
-        noteSpan.textContent = col.isOctaveStart ? col.noteName + col.octave : col.noteName;
-        freqSpan.textContent = col.frequency !== null ? Math.round(col.frequency) + ' Hz' : '';
-      });
-
-      return snapped;
+    function frequencyToX(frequency) {
+      if (frequency == null || frequency <= 0) return null;
+      // MIDI note number: 69 = A4 (440 Hz)
+      const midiNote = 69 + 12 * Math.log2(frequency / 440);
+      const col = midiNote - C5_MIDI;
+      // col 0 = left edge of C5, col NUM_COLUMNS = right edge of C7
+      return (col + 0.5) * columnWidth;
     }
 
     /**
@@ -172,20 +69,13 @@ const PianoRenderer = (function () {
      * @param {number} dbLevel
      */
     function addDataPoint(frequency, dbLevel) {
-      // Lazy-build piano keys if not initialized yet (e.g. on slow mobile layout)
-      if (columns.length === 0) {
-        buildPianoKeys();
-        if (columns.length === 0) return; // still no width available, skip
+      // Lazy-init columns if not yet done (e.g. slow mobile layout)
+      if (!columnsInitialized) {
+        initColumns();
+        if (!columnsInitialized) return; // still no width, skip
       }
 
-      let xPos = null;
-
-      if (frequency !== null && rootFrequency !== null) {
-        // Continuous log-frequency → x mapping (no snapping)
-        const semitoneOffset = 12 * Math.log2(frequency / rootFrequency);
-        const col = semitoneOffset + OCTAVES_BELOW * SEMITONES_PER_OCTAVE;
-        xPos = col * columnWidth + columnWidth / 2;
-      }
+      const xPos = frequencyToX(frequency);
 
       dataPoints.push({
         frequency: frequency,
@@ -196,7 +86,7 @@ const PianoRenderer = (function () {
       totalRows++;
       resizeCanvas();
 
-      // Auto-scroll to newest (top) before render so the correct viewport is drawn
+      // Auto-scroll to newest (top)
       if (autoScroll) {
         wrapperEl.scrollTop = 0;
       }
@@ -235,7 +125,6 @@ const PianoRenderer = (function () {
       const viewHeight = wrapperEl.clientHeight;
 
       // Data is newest-at-top: row (totalRows-1) is at y≈0, row 0 at bottom.
-      // scrollTop=0 shows newest data; scrollTop=max shows oldest.
       const firstVisibleRow = Math.max(0, totalRows - Math.ceil((scrollTop + viewHeight) / PIXELS_PER_ROW));
       const lastVisibleRow = Math.min(
         totalRows - 1,
@@ -250,11 +139,6 @@ const PianoRenderer = (function () {
       ctx.lineWidth = PLOT_LINE_WIDTH;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-
-      // Render pitch line. Data point index 0 = oldest (bottom), last = newest (top).
-      // y position: newest at top (small y), oldest at bottom (large y).
-      // Continuous segments of valid points are stroked as one polyline.
-      // Gaps (xPos == null) break the path. xPos is a continuous pixel position.
 
       let segmentActive = false;
 
@@ -293,14 +177,6 @@ const PianoRenderer = (function () {
     function clear() {
       dataPoints = [];
       totalRows = 0;
-      rootFrequency = null;
-      columns.forEach(c => {
-        c.frequency = null;
-        c.noteName = '';
-        c.octave = null;
-        c.isBlack = false;
-        c.isOctaveStart = false;
-      });
 
       const width = keysEl.clientWidth;
       keysEl.style.height = '0px';
@@ -308,25 +184,10 @@ const PianoRenderer = (function () {
       canvasEl.height = 0;
       canvasEl.style.width = width + 'px';
       canvasEl.style.height = '0px';
-
-      // Reset key divs to neutral white
-      const keyDivs = keysEl.querySelectorAll('.piano-key');
-      keyDivs.forEach(div => {
-        div.className = 'piano-key white';
-      });
-
-      // Reset labels
-      const cells = labelsEl.querySelectorAll('.label-cell');
-      cells.forEach(cell => {
-        const noteSpan = cell.querySelector('.label-note');
-        const freqSpan = cell.querySelector('.label-freq');
-        if (noteSpan) noteSpan.textContent = '';
-        if (freqSpan) freqSpan.textContent = '';
-      });
     }
 
     /**
-     * Enable/disable auto-scroll (recording = auto-scroll on, paused = off but user can manually scroll).
+     * Enable/disable auto-scroll.
      */
     function setAutoScroll(enable) {
       autoScroll = enable;
@@ -368,7 +229,6 @@ const PianoRenderer = (function () {
      */
     function scrollToSlider() {
       wrapperEl.scrollTop = parseInt(sliderEl.value, 10);
-      // render() will be called by the scroll event listener
     }
 
     /**
@@ -377,7 +237,6 @@ const PianoRenderer = (function () {
     function scrollToLatest() {
       wrapperEl.scrollTop = 0;
       if (sliderEl) sliderEl.value = 0;
-      // render() will be called by the scroll event listener
     }
 
     // --- Event listeners ---
@@ -390,19 +249,17 @@ const PianoRenderer = (function () {
       }
     });
 
-    // Rebuild on resize
+    // Rebuild column positions on resize
     window.addEventListener('resize', () => {
-      if (columns.length > 0) {
-        buildPianoKeys();
-        if (rootFrequency) calibrate(rootFrequency);
+      if (columnsInitialized) {
+        initColumns();
         resizeCanvas();
         render();
       }
     });
 
     return {
-      buildPianoKeys,
-      calibrate,
+      initColumns,
       addDataPoint,
       clear,
       setAutoScroll,

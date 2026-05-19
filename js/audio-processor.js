@@ -2,7 +2,6 @@
  * AudioProcessor - Handles microphone capture, FFT analysis, and pitch detection.
  *
  * Uses AnalyserNode (FFT) to detect the dominant frequency in the audio signal.
- * Calibrates a "root note" from the first frequency above the threshold.
  */
 
 const AudioProcessor = (function () {
@@ -44,9 +43,8 @@ const AudioProcessor = (function () {
 
   /**
    * Create a new AudioProcessor.
-   * @param {Object} callbacks - { onPitch, onCalibrate, onStatus }
-   *   onPitch(frequencyHz, dbLevel, columnIndex) - called every detection cycle
-   *   onCalibrate(frequencyHz) - called once on first detection
+   * @param {Object} callbacks - { onPitch, onStatus }
+   *   onPitch(frequencyHz, dbLevel) - called every detection cycle
    *   onStatus(message) - status text updates
    */
   function create(callbacks) {
@@ -58,7 +56,6 @@ const AudioProcessor = (function () {
     let source = null;
     let isRunning = false;
     let isPaused = false;
-    let isCalibrated = false;
     let timerId = null;
     let buffer = null;          // Uint8Array for FFT output
 
@@ -72,7 +69,7 @@ const AudioProcessor = (function () {
       if (isPaused) {
         isPaused = false;
         scheduleNext();
-        if (cb.onStatus) cb.onStatus(isCalibrated ? 'Recording ...' : 'Listening for notes ...');
+        if (cb.onStatus) cb.onStatus('Recording...');
         return;
       }
 
@@ -103,11 +100,10 @@ const AudioProcessor = (function () {
         // Do NOT connect to destination – we don't want feedback
 
         buffer = new Uint8Array(analyser.frequencyBinCount);
-        isCalibrated = false;
         isRunning = true;
         isPaused = false;
 
-        if (cb.onStatus) cb.onStatus('Listening for notes ...');
+        if (cb.onStatus) cb.onStatus('Recording...');
         scheduleNext();
       } catch (err) {
         console.error('Microphone access failed:', err);
@@ -128,7 +124,7 @@ const AudioProcessor = (function () {
     }
 
     /**
-     * Fully stop: release mic, clear root note.
+     * Fully stop: release mic.
      */
     function stop() {
       isRunning = false;
@@ -151,7 +147,6 @@ const AudioProcessor = (function () {
       }
       analyser = null;
       buffer = null;
-      rootFrequency = null;
       if (cb.onStatus) cb.onStatus('Stopped');
     }
 
@@ -194,7 +189,7 @@ const AudioProcessor = (function () {
 
       // Skip if below threshold
       if (dbLevel < MIN_DB_THRESHOLD) {
-        if (cb.onPitch) cb.onPitch(null, dbLevel, -1);
+        if (cb.onPitch) cb.onPitch(null, dbLevel);
         return;
       }
 
@@ -202,13 +197,7 @@ const AudioProcessor = (function () {
       const refinedBin = interpolatePeak(maxBin, buffer);
       const frequency = binToFrequency(refinedBin, sampleRate, fftSize);
 
-      if (!isCalibrated) {
-        isCalibrated = true;
-        if (cb.onCalibrate) cb.onCalibrate(frequency);
-        if (cb.onStatus) cb.onStatus('Recording...');
-      }
-
-      if (cb.onPitch) cb.onPitch(frequency, dbLevel, -1); // columnIndex computed by renderer
+      if (cb.onPitch) cb.onPitch(frequency, dbLevel);
     }
 
     return {

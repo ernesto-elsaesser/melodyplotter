@@ -11,7 +11,6 @@
   const wrapperEl = document.getElementById('piano-roll-wrapper');
   const keysEl    = document.getElementById('piano-keys');
   const canvasEl  = document.getElementById('pitch-canvas');
-  const labelsEl  = document.getElementById('labels-row');
   const scrollbackEl = document.getElementById('scrollback-control');
   const sliderEl  = document.getElementById('scrollback-slider');
   const btnLatest = document.getElementById('btn-scroll-latest');
@@ -22,16 +21,12 @@
 
   // --- Modules ---
   const renderer = PianoRenderer.create({
-    keysEl, canvasEl, labelsEl, wrapperEl, scrollbackEl, sliderEl,
+    keysEl, canvasEl, wrapperEl, scrollbackEl, sliderEl,
   });
 
   const processor = AudioProcessor.create({
     onPitch: function (frequency, dbLevel) {
       renderer.addDataPoint(frequency, dbLevel);
-    },
-    onCalibrate: function (frequency) {
-      renderer.calibrate(frequency);
-      statusEl.className = 'recording';
     },
     onStatus: function (msg) {
       statusEl.textContent = msg;
@@ -74,7 +69,7 @@
   // --- Button handlers ---
   btnRecord.addEventListener('click', async () => {
     if (state === State.PAUSED) {
-      // Resume: keep existing data and root, start recording again
+      // Resume: keep existing data, start recording again
       enterState(State.RECORDING);
       await processor.start(); // synchronous in resume path, but keep await for safety
     } else {
@@ -115,7 +110,7 @@
     // Defer layout-dependent setup until after first paint
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        renderer.buildPianoKeys();
+        renderer.initColumns();
       });
     });
   }

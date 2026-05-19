@@ -90,10 +90,6 @@ h1 {
   transition: color 0.3s;
 }
 
-#status.calibrated {
-  color: #2ed573;
-}
-
 #status.recording {
   color: #ff6b6b;
 }
