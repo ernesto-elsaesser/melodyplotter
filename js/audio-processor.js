@@ -9,6 +9,8 @@ const AudioProcessor = (function () {
   const MIN_DB_THRESHOLD = -25;   // dB below which signal is treated as silence
   const FFT_SIZE = 4096;          // FFT window size (good resolution for whistling)
   const SAMPLE_INTERVAL_MS = 40;  // ~25 fps pitch detection
+  const C5_FREQ = 440 * Math.pow(2, 3/12);   // ~523.25 Hz
+  const C7_FREQ = 440 * Math.pow(2, 27/12);  // ~2093.00 Hz
 
   /**
    * Convert an FFT bin index to frequency (Hz) given sample rate and FFT size.
@@ -196,6 +198,12 @@ const AudioProcessor = (function () {
       // Refine peak with parabolic interpolation
       const refinedBin = interpolatePeak(maxBin, buffer);
       const frequency = binToFrequency(refinedBin, sampleRate, fftSize);
+
+      // Discard frequencies outside C5–C7 range
+      if (frequency < C5_FREQ || frequency > C7_FREQ) {
+        if (cb.onPitch) cb.onPitch(null, dbLevel);
+        return;
+      }
 
       if (cb.onPitch) cb.onPitch(frequency, dbLevel);
     }
