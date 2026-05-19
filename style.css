@@ -127,11 +127,6 @@ h1 {
   height: 16px;
 }
 
-.label-freq {
-  writing-mode: vertical-rl;
-  color: #aaa;
-  white-space: nowrap;
-}
 
 /* === Piano Roll Wrapper (scrollable) === */
 #piano-roll-wrapper {
