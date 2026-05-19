@@ -25,8 +25,8 @@
   });
 
   const processor = AudioProcessor.create({
-    onPitch: function (frequency, dbLevel) {
-      renderer.addDataPoint(frequency, dbLevel);
+    onPitch: function (frequency) {
+      renderer.addDataPoint(frequency);
     },
     onStatus: function (msg) {
       statusEl.textContent = msg;
@@ -104,20 +104,4 @@
   btnLatest.addEventListener('click', () => {
     renderer.scrollToLatest();
   });
-
-  // --- Initialization ---
-  function init() {
-    // Defer layout-dependent setup until after first paint
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        renderer.initColumns();
-      });
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
 })();

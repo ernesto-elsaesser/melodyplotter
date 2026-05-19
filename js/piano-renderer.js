@@ -32,7 +32,7 @@ const PianoRenderer = (function () {
 
     const ctx = canvasEl.getContext('2d');
 
-    let dataPoints = [];         // { frequency, xPos, dbLevel }
+    let dataPoints = [];         // { frequency, xPos }
     let totalRows = 0;
     let columnWidth = 0;
     let columnsInitialized = false;
@@ -65,9 +65,8 @@ const PianoRenderer = (function () {
     /**
      * Add a data point from pitch detection.
      * @param {number|null} frequency - detected frequency, or null if below threshold
-     * @param {number} dbLevel
      */
-    function addDataPoint(frequency, dbLevel) {
+    function addDataPoint(frequency) {
       // Lazy-init columns if not yet done (e.g. slow mobile layout)
       if (!columnsInitialized) {
         initColumns();
@@ -79,7 +78,6 @@ const PianoRenderer = (function () {
       dataPoints.push({
         frequency: frequency,
         xPos: xPos,
-        dbLevel: dbLevel,
       });
 
       totalRows++;
@@ -169,11 +167,6 @@ const PianoRenderer = (function () {
      */
     function setAutoScroll(enable) {
       autoScroll = enable;
-      if (enable) {
-        wrapperEl.classList.add('auto-scroll');
-      } else {
-        wrapperEl.classList.remove('auto-scroll');
-      }
     }
 
     /**
@@ -227,17 +220,7 @@ const PianoRenderer = (function () {
       }
     });
 
-    // Rebuild column positions on resize
-    window.addEventListener('resize', () => {
-      if (columnsInitialized) {
-        initColumns();
-        resizeCanvas();
-        render();
-      }
-    });
-
     return {
-      initColumns,
       addDataPoint,
       clear,
       setAutoScroll,
