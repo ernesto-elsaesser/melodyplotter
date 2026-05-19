@@ -7,8 +7,7 @@
 const PianoRenderer = (function () {
   // --- Tunable constants ---
   const PIXELS_PER_ROW = 4;        // vertical space per data point
-  const PLOT_COLOR = '#ff4757';    // red pitch line
-  const PLOT_LINE_WIDTH = 5;
+  const PLOT_COLOR = '#ff4757';    // red pitch dots
   const PLOT_DOT_RADIUS = 3;
 
   // Fixed piano range: C5 (MIDI 72) to C7 (MIDI 96) = 25 semitones
@@ -135,39 +134,18 @@ const PianoRenderer = (function () {
 
       if (dataPoints.length === 0 || columnWidth <= 0) return;
 
-      ctx.strokeStyle = PLOT_COLOR;
-      ctx.lineWidth = PLOT_LINE_WIDTH;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      let segmentActive = false;
+      ctx.fillStyle = PLOT_COLOR;
 
       for (let i = firstVisibleRow; i <= lastVisibleRow; i++) {
         const dp = dataPoints[i];
-
-        if (dp.xPos == null) {
-          if (segmentActive) {
-            ctx.stroke();
-            ctx.beginPath();
-            segmentActive = false;
-          }
-          continue;
-        }
+        if (dp.xPos == null) continue;
 
         const x = dp.xPos;
         const y = (totalRows - 1 - i) * PIXELS_PER_ROW + PIXELS_PER_ROW / 2;
 
-        if (!segmentActive) {
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          segmentActive = true;
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-
-      if (segmentActive) {
-        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, PLOT_DOT_RADIUS, 0, 2 * Math.PI);
+        ctx.fill();
       }
     }
 
